@@ -2,4 +2,4 @@
 *.bak
 *.sync-bak-*
 # 探针脚本不进包
-_probe/
+_probe/.commit-msg.tmp
