@@ -137,6 +137,23 @@
 - 配置经 `ctx.get("configForms").get("dsh-loop-guard")` 拿到
 - **无条件注册**，不用 `whileServed` 门控：非 loopback 页面下设置文档是进程内的，`describe` 镜像永远不加载，门控会让这一行根本不存在——看起来像被删了而不是被禁用
 
+### 两个必须同时满足的条件
+
+**一、字段要标 `.volatile()`。** 只有 volatile 字段才会被 harness 生成可编辑的设置表单，`dsh-settings` 的 `hasConfigEntry` 也就认不到这个命名空间，浏览器侧只会拿到 `status: "unavailable"`。schemastery 的校验器还要求 volatile 字段有固定对象路径、且**不被外层 volatile 包住**——所以标在叶子上，不要标在 `supervisor` / `detect` / `punish` 这些对象上。
+
+**二、宿主侧必须拆包。** 标了 `.volatile()` 的字段，cordis 交给插件的是**带 `.get()` 的包装值**，而手写在 `cordis.patch.yml` 补丁行里的则是普通 JSON。`normalizeConfig` 里走 `unwrap()` 同时接受两种：
+
+```js
+Schema.resolve({ toolRepeatThreshold: 7 }, Config)[0].toolRepeatThreshold
+// → { get: [Function], [Symbol(cosmokit.volatile.write)]: [Function] }
+```
+
+不拆包的后果是静默的：`typeof wrapper === "object"`，所有类型判定落空，配置一声不响地退回默认值。
+
+### 读生效值
+
+宿主侧顶层优先于嵌套，但用户的 `cordis.patch.yml` 里写的是嵌套值、顶层字段压根没被设过。所以这一行读的是**生效值**（顶层 → 嵌套 → 默认），写一律写到顶层。只读顶层会让 UI 显示 schema 默认值，而插件实际用的是嵌套值。
+
 ---
 
 ## 安装
