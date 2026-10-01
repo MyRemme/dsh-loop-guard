@@ -1,5 +1,8 @@
 # 开发期备份
 *.bak
 *.sync-bak-*
+# 临时文件（提交信息、各类中间产物）—— 别让 git add -A 收进去
+*.tmp
+.commit-msg.tmp
 # 探针脚本不进包
-_probe/.commit-msg.tmp
+_probe/
