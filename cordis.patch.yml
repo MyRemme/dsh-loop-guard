@@ -1,0 +1,10 @@
+# Bundle patch layer: one host row for the loop guard itself.
+#
+# The entry id doubles as the plugin's settings namespace, so the row below can
+# carry the Config through the same convention dsh-context / dsh-computer-use-guard
+# follow. Leave the row body empty to use the plugin defaults; add a `config:`
+# map here (or a `- id: dsh-loop-guard` block in the profile's cordis.patch.yml)
+# to point the supervisor at a different provider/model.
+- insert:
+    - id: dsh-loop-guard
+      name: dsh-loop-guard
