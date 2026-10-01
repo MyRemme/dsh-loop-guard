@@ -150,6 +150,16 @@ Schema.resolve({ toolRepeatThreshold: 7 }, Config)[0].toolRepeatThreshold
 
 不拆包的后果是静默的：`typeof wrapper === "object"`，所有类型判定落空，配置一声不响地退回默认值。
 
+### 改完立即生效，不用重启
+
+`normalizeConfig` 里对这几个 volatile 旋钮**不取快照，挂的是取值器**。
+
+cordis 处理设置写入时，只在 volatile 路径上跑 `_commitVolatile()`，对包装对象做 `target[Symbol.for("cosmokit.volatile.write")](nextValue)`——原地改写，**并且不会重新执行 `apply`**（`dsh-util-values` 的 `updateVolatile` 就是这个实现）。所以插件必须持有包装对象、在用的时候调 `.get()`。
+
+早先这里把值拷进普通快照对象，UI 改完写进了包装对象而插件再也不看它——于是每调一次参数都要重启。现在改成取值器后，设置界面里的改动**立即生效**。
+
+需要重启的只剩**代码变更**（`lib/*.js` 的逻辑），因为那要求 cordis 重新 import 模块，这一点无法绕过。
+
 ### 读生效值
 
 宿主侧顶层优先于嵌套，但用户的 `cordis.patch.yml` 里写的是嵌套值、顶层字段压根没被设过。所以这一行读的是**生效值**（顶层 → 嵌套 → 默认），写一律写到顶层。只读顶层会让 UI 显示 schema 默认值，而插件实际用的是嵌套值。

@@ -1,0 +1,17 @@
+fix(ui): volatile 旋钮改为现读，设置改动立即生效
+
+原来 normalizeConfig 在 apply 时把值拷进普通快照对象。但 cordis 处理设置写入时
+只在 volatile 路径上跑 _commitVolatile()，对包装对象做原地改写（写进
+Symbol.for("cosmokit.volatile.write") 那个槽），并且不会重新执行 apply ——
+dsh-util-values 的 updateVolatile 就是这个实现。于是 UI 写入落在包装对象里，
+插件再也不读它，每调一次参数都要重启。
+
+现在这几个 volatile 旋钮挂的是取值器，用的时候现读：
+  detect.toolRepeatThreshold / detect.toolBlockAt（含两者的钳制关系）
+  detect.stepStallThreshold / detect.hardAfterHits
+  punish.cutStream / punish.blockRepeatTool
+
+其余字段仍是快照 —— 改它们本来就需要重启重载模块，快照不影响正确性。
+
+验证：lg-ui-config 新增两条热更新断言（阈值 5 -> 2、cutStream true -> false，
+同一 apply 实例内直接生效），20/20。全量 160 项断言通过。
